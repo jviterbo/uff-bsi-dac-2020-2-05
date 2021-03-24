@@ -100,7 +100,7 @@ public class AgendaClientJsonServlet2 extends HttpServlet {
                 for (int i = 0; i < k; i++) {
                     out.println("<tr>");
                     ent = jsonArray.getJsonObject(i);
-                    out.println("<td>" + ent.getString("id") + "</td><td>" + ent.getString("nome") + " " + ent.getString("sobrenome") + "</td><td>" + ent.getString("mail") + "</td><td>" + ent.getString("zap") + "</td>");
+                    out.println("<td>" + ent.getInt("id") + "</td><td>" + ent.getString("nome") + " " + ent.getString("sobrenome") + "</td><td>" + ent.getString("mail") + "</td><td>" + ent.getString("zap") + "</td>");
                     out.println("</tr>");
                 }
                 out.println("</table>");

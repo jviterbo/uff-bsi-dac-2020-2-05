@@ -7,14 +7,16 @@ package com.mycompany.agendaclient.servlets;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.json.Json;
-import javax.json.JsonBuilderFactory;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import javax.json.JsonReaderFactory;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -22,19 +24,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.StatusType;
 
 /**
  *
  * @author viter
  */
-@WebServlet(name = "AgendaClientCadastraJsonServlet", urlPatterns = {"/AgendaClientCadastraJsonServlet"})
-public class AgendaClientCadastraJsonServlet extends HttpServlet {
+@WebServlet(name = "AgendaClientJsonServlet3", urlPatterns = {"/AgendaClientJsonServlet3"})
+public class AgendaClientJsonServlet3 extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -49,43 +49,49 @@ public class AgendaClientCadastraJsonServlet extends HttpServlet {
             throws ServletException, IOException {
 
         URI uri;
-        int status=0;
-        StatusType statusInfo= null;
-        String statusMsg="";
-        URI res = null;
-        JsonBuilderFactory factory;
+        int status = 0;
+        int k;
+        String res = "";
+        String id = "";
+        String statusMsg = "";
+        Response.StatusType statusInfo = null;
+        JsonObject jsonObj = null;
 
         response.setContentType("text/html;charset=UTF-8");
 
         Client client = ClientBuilder.newClient();
-
         String url = "http://localhost:8080/uff-bsi-dac-2020-1-04/";
+
+        JsonReaderFactory factory = Json.createReaderFactory(null);
+
+        id = request.getParameter("id");
 
         try {
 
             uri = new URI(url);
             WebTarget webTarget = client.target(uri);
-            WebTarget agendaWebTarget = webTarget.path("resources/agenda");
+            WebTarget agendaWebTarget = webTarget.path("resources/agenda/entrada/" + id);
 
             Invocation.Builder invocationBuilder = agendaWebTarget.request(MediaType.APPLICATION_JSON);
 
-            factory = Json.createBuilderFactory(null);
-            JsonObjectBuilder builder = factory.createObjectBuilder();
-            JsonObject obj = builder.add("nome", request.getParameter("nome"))
-                    .add("sobrenome", request.getParameter("sobrenome"))
-                    .add("mail", request.getParameter("mail"))
-                    .add("zap", request.getParameter("zap"))
-                    .build();
-            Response resposta = invocationBuilder.post(Entity.entity(obj, MediaType.APPLICATION_JSON));
+            Response resposta = invocationBuilder.get();
 
-            //Entrada entrada = resposta.readEntity(Entrada.class);
             status = resposta.getStatus();
             statusInfo = resposta.getStatusInfo();
             statusMsg = statusInfo.getReasonPhrase();
-            res = resposta.getLocation();
+            res = resposta.readEntity(String.class);
+
+            if (status == 200) {
+
+                JsonReader jsonReader = factory.createReader(new StringReader(res));
+                if (jsonReader != null) {
+                    jsonObj = jsonReader.readObject();
+                }
+
+            }
 
         } catch (URISyntaxException ex) {
-            Logger.getLogger(AgendaClientCadastraJsonServlet.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(AgendaClientJsonServlet3.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         try (PrintWriter out = response.getWriter()) {
@@ -93,13 +99,18 @@ public class AgendaClientCadastraJsonServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet AgendaClient</title>");
+            out.println("<title>Servlet ClientServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet ClientServlet</h1>");
+            out.println("<h1>Servlet ClientServlet JSON</h1>");
             out.println("<p>Status da resposta: " + status + " \"" + statusMsg + "\"</p>");
-            if (res !=null)
-                out.println("<p>URI: " + res.toString() + "</p>");
+
+            if (jsonObj != null) {
+                out.println("<p>[" + jsonObj.getInt("id") + "] " + jsonObj.getString("nome") + " " + jsonObj.getString("sobrenome") + " - e-mail: " + jsonObj.getString("mail") + " - Whatsapp: " + jsonObj.getString("zap") + "</p>");
+            } else {
+                out.println("<p>Nenhum registro recuperado</p>");
+            }
+
             out.println("</body>");
             out.println("</html>");
         }
